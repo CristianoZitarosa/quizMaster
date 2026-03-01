@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Master V8.3 - Universal</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="container">
+    <div id="setup">
+        <h2>Quiz Master V8.3</h2>
+        <input type="file" id="fileInput" accept=".txt">
+        
+        <div id="options-menu" class="hidden">
+            <p id="info-totale"></p>
+            <div class="mode-buttons">
+                <button onclick="showMode('all')">Tutti</button>
+                <button onclick="showMode('range')">Range</button>
+                <button onclick="showMode('manual')">Selezione</button>
+            </div>
+
+            <div id="range-area" class="hidden range-box">
+                Da: <input type="number" id="startRange" value="1"> 
+                A: <input type="number" id="endRange">
+            </div>
+
+            <div id="manual-area" class="hidden">
+                <input type="text" class="search-box" id="searchManual" placeholder="Cerca nel testo..." onkeyup="filterManual()">
+                <div class="filter-controls">
+                    <button class="secondary btn-small" onclick="toggleFiltrati(true)">Seleziona Tutti</button>
+                    <button class="secondary btn-small" onclick="toggleFiltrati(false)">Deseleziona</button>
+                </div>
+                <div id="manual-selection"></div>
+                <p id="counter-manual">Selezionate: 0</p>
+            </div>
+
+            <button id="startBtn" class="btn-start" onclick="preparaQuiz()">AVVIA SESSIONE 🚀</button>
+        </div>
+    </div>
+
+    <div id="quiz" class="hidden">
+        <div class="stats-bar">
+            <span>Round: <span id="roundNum">1</span></span>
+            <span>Rimaste: <span id="remainNum">0</span></span>
+            <span class="error-text">Paniere: <span id="errorNum">0</span></span>
+        </div>
+        <p id="idDomanda" class="id-label"></p>
+        <div id="testoDomanda" class="testo-quesito"></div>
+        <div id="opzioni-container"></div>
+        <div id="feedback" class="hidden feedback"></div>
+        <button id="btnProssima" class="hidden" onclick="prossimaDomanda()">Continua →</button>
+    </div>
+
+    <div id="finale" class="hidden centered">
+        <h2>🏆 Sessione Completata</h2>
+        <button class="download" id="btnDownload" onclick="scaricaErrori()">Scarica Paniere Errori (.txt)</button>
+        <button class="secondary mt-15" onclick="location.reload()">Ricomincia</button>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
