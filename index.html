@@ -3,27 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Master V8.3 - Universal</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Quiz Master V9.0 - Universal</title>
     
     <link rel="icon" type="image/x-icon" href="favicon/favicon.ico">    
     <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="favicon/favicon-16x16.png">
     <link rel="manifest" href="favicon/site.webmanifest">
+
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="container">
     <div class="card">
+        <div class="theme-toggle-container">
+            <button id="themeBtn" class="btn-theme-toggle" onclick="toggleTheme()">☀️ Chiaro</button>
+        </div>
+
         <div id="setup">
-            <h1 style="color: var(--accent-blue);">Quiz Master V8.4</h1>
+            <h1 style="color: var(--accent-blue);">Quiz Master V9.0</h1>
             <p class="subtitle">Seleziona la banca dati per iniziare</p>
             
             <input type="file" id="fileInput" accept=".txt" style="margin-bottom: 15px; width: 100%;">
             
             <div id="options-menu" class="hidden">
                 <p id="info-totale" style="margin: 15px 0; font-weight: bold; text-align: center; color: var(--accent-blue);"></p>
+                
+                <!-- Selezione Tipo Sessione -->
+                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                    <button id="typeTest" class="btn-type active-type" onclick="setSessionType('test')">📝 Test Classico</button>
+                    <button id="typeLearn" class="btn-type" onclick="setSessionType('learn')">🧠 Apprendimento</button>
+                </div>
+
                 <div class="mode-options">
                     <button class="btn-mode" onclick="showMode('all')">Tutti</button>
                     <button class="btn-mode" onclick="showMode('range')">Range</button>
@@ -51,9 +63,27 @@
             </div>
         </div>
 
+        <!-- Vista Studio (Apprendimento) -->
+        <div id="study-view" class="hidden">
+            <div class="stats-bar">
+                <span>FASE STUDIO (Blocco <span id="studyBlockNum">1</span>)</span>
+                <span>Scheda: <span id="studyCardNum">1</span>/<span id="studyTotalBlock">5</span></span>
+            </div>
+            <p id="studyIdDomanda" style="font-size: 0.85em; color: var(--accent-orange); font-weight: bold; margin-bottom: 8px;"></p>
+            <div id="studyTestoDomanda" style="font-weight: 700; font-size: 1.15em; margin-bottom: 20px;"></div>
+            
+            <div class="correct-answer-box">
+                <span style="font-size: 0.8em; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-green); font-weight: bold; display: block; margin-bottom: 5px;">Risposta Corretta:</span>
+                <p id="studyTestoRisposta" style="font-size: 1.05em; font-weight: 600; color: #fff;"></p>
+            </div>
+
+            <button style="margin-top: 20px; background-color: var(--accent-orange);" onclick="prossimaSchedaStudio()">Ho Memorizzato →</button>
+        </div>
+
+        <!-- Vista Quiz Classica -->
         <div id="quiz" class="hidden">
             <div class="stats-bar">
-                <span>Round: <span id="roundNum">1</span></span>
+                <span id="labelRound">Round: <span id="roundNum">1</span></span>
                 <span>Rimaste: <span id="remainNum">0</span></span>
                 <span style="color: var(--accent-red)">Paniere: <span id="errorNum">0</span></span>
             </div>
