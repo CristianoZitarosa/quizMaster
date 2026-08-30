@@ -17,7 +17,10 @@ document.getElementById('fileInput').onchange = function(e) {
                 const id = idMatch[1];
                 const letteraCorretta = rispostaMatch[1].toUpperCase();
                 const lines = blocco.split('\n');
-                let testoDomanda = "", opzioni = [], testoRispostaCorretta = "";
+                
+                let testoDomanda = "";
+                let opzioni = [];
+                let testoRispostaCorretta = "";
 
                 lines.forEach(line => {
                     const opzMatch = line.match(/^([A-E])\)\s*(.*)/i);
@@ -35,8 +38,10 @@ document.getElementById('fileInput').onchange = function(e) {
 
                 if (opzioni.length > 0) {
                     tutteLeDomande.push({
-                        id: id, domanda: testoDomanda.trim(),
-                        opzioniOriginali: [...opzioni], corretta: testoRispostaCorretta
+                        id: id,
+                        domanda: testoDomanda.trim(),
+                        opzioniOriginali: [...opzioni],
+                        corretta: testoRispostaCorretta
                     });
                 }
             }
@@ -48,7 +53,7 @@ document.getElementById('fileInput').onchange = function(e) {
             document.getElementById('options-menu').classList.remove('hidden');
             generaChecklist();
         } else {
-            alert("Formato non riconosciuto. Usa '1.' per le domande e 'a)' per le opzioni.");
+            alert("Formato non riconosciuto. Assicurati che le domande inizino con '1.' e le opzioni con 'a)' o 'A)'");
         }
     };
     reader.readAsText(e.target.files[0]);
@@ -154,6 +159,8 @@ function controllaRisposta(btnSelezionato, testoScelto, testoCorretto) {
     if (!document.getElementById('btnProssima').classList.contains('hidden')) return;
     const f = document.getElementById('feedback');
     const buttons = document.querySelectorAll('.opzione-btn');
+    
+    buttons.forEach(b => b.disabled = true);
     f.classList.remove('hidden');
 
     if (testoScelto === testoCorretto) {
