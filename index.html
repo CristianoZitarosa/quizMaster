@@ -14,55 +14,61 @@
 </head>
 <body>
 
-<div id="container">
-    <div id="setup">
-        <h2>Quiz Master V8.3</h2>
-        <input type="file" id="fileInput" accept=".txt">
-        
-        <div id="options-menu" class="hidden">
-            <p id="info-totale"></p>
-            <div class="mode-buttons">
-                <button onclick="showMode('all')">Tutti</button>
-                <button onclick="showMode('range')">Range</button>
-                <button onclick="showMode('manual')">Selezione</button>
-            </div>
-
-            <div id="range-area" class="hidden range-box">
-                Da: <input type="number" id="startRange" value="1"> 
-                A: <input type="number" id="endRange">
-            </div>
-
-            <div id="manual-area" class="hidden">
-                <input type="text" class="search-box" id="searchManual" placeholder="Cerca nel testo..." onkeyup="filterManual()">
-                <div class="filter-controls">
-                    <button class="secondary btn-small" onclick="toggleFiltrati(true)">Seleziona Tutti</button>
-                    <button class="secondary btn-small" onclick="toggleFiltrati(false)">Deseleziona</button>
+<div class="container">
+    <div class="card">
+        <div id="setup">
+            <h1 style="color: var(--accent-blue);">Quiz Master V8.4</h1>
+            <p class="subtitle">Seleziona la banca dati per iniziare</p>
+            
+            <input type="file" id="fileInput" accept=".txt" style="margin-bottom: 15px; width: 100%;">
+            
+            <div id="options-menu" class="hidden">
+                <p id="info-totale" style="margin: 15px 0; font-weight: bold; text-align: center; color: var(--accent-blue);"></p>
+                <div class="mode-options">
+                    <button class="btn-mode" onclick="showMode('all')">Tutti</button>
+                    <button class="btn-mode" onclick="showMode('range')">Range</button>
+                    <button class="btn-mode" onclick="showMode('manual')">Selezione</button>
                 </div>
-                <div id="manual-selection"></div>
-                <p id="counter-manual">Selezionate: 0</p>
+
+                <div id="range-area" class="range-box hidden">
+                    <span>Da:</span>
+                    <input type="number" id="startRange" value="1"> 
+                    <span>A:</span>
+                    <input type="number" id="endRange">
+                </div>
+
+                <div id="manual-area" class="manual-box hidden">
+                    <input type="text" id="searchManual" placeholder="Cerca nel testo..." onkeyup="filterManual()">
+                    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                        <button class="secondary" style="font-size: 12px; padding: 6px" onclick="toggleFiltrati(true)">Seleziona Tutti</button>
+                        <button class="secondary" style="font-size: 12px; padding: 6px" onclick="toggleFiltrati(false)">Deseleziona</button>
+                    </div>
+                    <div id="manual-selection"></div>
+                    <p id="counter-manual" style="font-size: 0.8em; font-weight: bold; color: var(--text-muted);">Selezionate: 0</p>
+                </div>
+
+                <button id="startBtn" style="margin-top: 15px;" onclick="preparaQuiz()">AVVIA SESSIONE 🚀</button>
             </div>
-
-            <button id="startBtn" class="btn-start" onclick="preparaQuiz()">AVVIA SESSIONE 🚀</button>
         </div>
-    </div>
 
-    <div id="quiz" class="hidden">
-        <div class="stats-bar">
-            <span>Round: <span id="roundNum">1</span></span>
-            <span>Rimaste: <span id="remainNum">0</span></span>
-            <span class="error-text">Paniere: <span id="errorNum">0</span></span>
+        <div id="quiz" class="hidden">
+            <div class="stats-bar">
+                <span>Round: <span id="roundNum">1</span></span>
+                <span>Rimaste: <span id="remainNum">0</span></span>
+                <span style="color: var(--accent-red)">Paniere: <span id="errorNum">0</span></span>
+            </div>
+            <p id="idDomanda" style="font-size: 0.85em; color: var(--accent-blue); font-weight: bold; margin-bottom: 8px;"></p>
+            <div id="testoDomanda"></div>
+            <div id="opzioni-container"></div>
+            <div id="feedback" class="hidden feedback"></div>
+            <button id="btnProssima" class="hidden" style="margin-top: 15px;" onclick="prossimaDomanda()">Continua →</button>
         </div>
-        <p id="idDomanda" class="id-label"></p>
-        <div id="testoDomanda" class="testo-quesito"></div>
-        <div id="opzioni-container"></div>
-        <div id="feedback" class="hidden feedback"></div>
-        <button id="btnProssima" class="hidden" onclick="prossimaDomanda()">Continua →</button>
-    </div>
 
-    <div id="finale" class="hidden centered">
-        <h2>🏆 Sessione Completata</h2>
-        <button class="download" id="btnDownload" onclick="scaricaErrori()">Scarica Paniere Errori (.txt)</button>
-        <button class="secondary mt-15" onclick="location.reload()">Ricomincia</button>
+        <div id="finale" class="hidden" style="text-align: center;">
+            <h2 style="color: var(--accent-green); margin-bottom: 20px;">🏆 Sessione Completata</h2>
+            <button id="btnDownload" style="background-color: var(--accent-green); margin-bottom: 10px;" onclick="scaricaErrori()">Scarica Paniere Errori (.txt)</button>
+            <button class="secondary" onclick="location.reload()">Ricomincia</button>
+        </div>
     </div>
 </div>
 
