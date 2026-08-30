@@ -12,6 +12,32 @@
     --accent-red: #ef4444;      /* Rosso errore */
 }
 
+/* Stili per la Light Mode */
+body.light-theme {
+    --bg-main: #f3f4f6;
+    --bg-card: #ffffff;
+    --bg-input: #e5e7eb;
+    --text-main: #1f2937;
+    --text-muted: #6b7280;
+}
+
+body.light-theme .opzione-btn {
+    background-color: #f3f4f6;
+    color: #1f2937;
+    border: 1px solid #d1d5db;
+}
+
+body.light-theme input[type="text"], 
+body.light-theme input[type="number"] {
+    background-color: #ffffff;
+    color: #1f2937;
+    border: 1px solid #d1d5db;
+}
+
+body.light-theme .correct-answer-box p {
+    color: #1f2937 !important;
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -43,6 +69,21 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+.theme-toggle-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+}
+
+.btn-theme-toggle {
+    width: auto;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    background-color: var(--bg-input);
+    color: var(--text-main);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
 h1, h2, h3 {
     margin-bottom: 8px;
     font-weight: 700;
@@ -67,6 +108,19 @@ button {
 }
 
 button:hover { background-color: var(--accent-blue-hover); }
+
+/* Selettori Modalità Apprendimento / Test */
+.btn-type {
+    background-color: var(--bg-input);
+    color: var(--text-muted);
+    border: 1px solid rgba(255,255,255,0.05);
+    flex: 1;
+}
+
+.btn-type.active-type {
+    background-color: var(--accent-blue);
+    color: #fff;
+}
 
 .mode-options {
     display: flex;
@@ -178,6 +232,14 @@ input[type="text"], input[type="number"] {
 .opzione-btn:disabled { cursor: not-allowed; opacity: 0.8; }
 .corretta-evidenziata { background-color: var(--accent-green) !important; color: #fff !important; }
 .errata-evidenziata { background-color: var(--accent-red) !important; color: #fff !important; }
+
+/* Box Flashcard per Modalità Apprendimento */
+.correct-answer-box {
+    background-color: rgba(16, 185, 129, 0.15);
+    border-left: 4px solid var(--accent-green);
+    padding: 15px;
+    border-radius: 8px;
+}
 
 .feedback {
     margin-top: 20px;
