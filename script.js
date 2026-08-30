@@ -1,6 +1,13 @@
 let tutteLeDomande = [], mazzoAttuale = [], erroriGlobali = [], erroriRound = [], indiceCorrente = 0, round = 1;
 let modalitaScelta = 'all';
+let sessionType = 'test'; 
 let ultimaDisposizione = "";
+
+// Variabili per Modalità Apprendimento
+let blocchiStudio = [];
+let indiceBloccoCorrente = 0;
+let indiceStudioInBlocco = 0;
+const DIMENSIONE_BLOCCO = 5; 
 
 document.getElementById('fileInput').onchange = function(e) {
     const reader = new FileReader();
@@ -59,6 +66,12 @@ document.getElementById('fileInput').onchange = function(e) {
     reader.readAsText(e.target.files[0]);
 };
 
+function setSessionType(type) {
+    sessionType = type;
+    document.getElementById('typeTest').classList.toggle('active-type', type === 'test');
+    document.getElementById('typeLearn').classList.toggle('active-type', type === 'learn');
+}
+
 function showMode(m) {
     modalitaScelta = m;
     document.getElementById('range-area').classList.toggle('hidden', m !== 'range');
@@ -96,20 +109,70 @@ function updateCounter() {
 }
 
 function preparaQuiz() {
-    if (modalitaScelta === 'all') mazzoAttuale = [...tutteLeDomande];
+    let mazzoIniziale = [];
+    if (modalitaScelta === 'all') mazzoIniziale = [...tutteLeDomande];
     else if (modalitaScelta === 'range') {
         const s = parseInt(document.getElementById('startRange').value) - 1;
         const e = parseInt(document.getElementById('endRange').value);
-        mazzoAttuale = tutteLeDomande.slice(Math.max(0, s), e);
+        mazzoIniziale = tutteLeDomande.slice(Math.max(0, s), e);
     } else {
-        mazzoAttuale = Array.from(document.querySelectorAll('.quiz-check:checked')).map(cb => tutteLeDomande[cb.value]);
+        mazzoIniziale = Array.from(document.querySelectorAll('.quiz-check:checked')).map(cb => tutteLeDomande[cb.value]);
     }
-    if (mazzoAttuale.length === 0) return alert("Seleziona almeno una domanda!");
+    
+    if (mazzoIniziale.length === 0) return alert("Seleziona almeno una domanda!");
+    
     indiceCorrente = 0; round = 1; erroriGlobali = []; erroriRound = [];
-    shuffle(mazzoAttuale);
     document.getElementById('setup').classList.add('hidden');
-    document.getElementById('quiz').classList.remove('hidden');
-    mostraDomanda();
+
+    if (sessionType === 'learn') {
+        blocchiStudio = [];
+        for (let i = 0; i < mazzoIniziale.length; i += DIMENSIONE_BLOCCO) {
+            blocchiStudio.push(mazzoIniziale.slice(i, i + DIMENSIONE_BLOCCO));
+        }
+        indiceBloccoCorrente = 0;
+        avviaFaseStudio();
+    } else {
+        mazzoAttuale = [...mazzoIniziale];
+        shuffle(mazzoAttuale);
+        document.getElementById('quiz').classList.remove('hidden');
+        mostraDomanda();
+    }
+}
+
+/* Gestione Modalità Apprendimento */
+function avviaFaseStudio() {
+    document.getElementById('quiz').classList.add('hidden');
+    document.getElementById('study-view').classList.remove('hidden');
+    indiceStudioInBlocco = 0;
+    mostraSchedaStudio();
+}
+
+function mostraSchedaStudio() {
+    const bloccoAttuale = blocchiStudio[indiceBloccoCorrente];
+    const q = bloccoAttuale[indiceStudioInBlocco];
+
+    document.getElementById('studyBlockNum').innerText = `${indiceBloccoCorrente + 1}/${blocchiStudio.length}`;
+    document.getElementById('studyCardNum').innerText = indiceStudioInBlocco + 1;
+    document.getElementById('studyTotalBlock').innerText = bloccoAttuale.length;
+    document.getElementById('studyIdDomanda').innerText = `DOMANDA N. ${q.id}`;
+    document.getElementById('studyTestoDomanda').innerText = q.domanda;
+    document.getElementById('studyTestoRisposta').innerText = q.corretta;
+}
+
+function prossimaSchedaStudio() {
+    const bloccoAttuale = blocchiStudio[indiceBloccoCorrente];
+    indiceStudioInBlocco++;
+
+    if (indiceStudioInBlocco < bloccoAttuale.length) {
+        mostraSchedaStudio();
+    } else {
+        document.getElementById('study-view').classList.add('hidden');
+        document.getElementById('quiz').classList.remove('hidden');
+        mazzoAttuale = [...bloccoAttuale];
+        shuffle(mazzoAttuale);
+        indiceCorrente = 0;
+        mostraDomanda();
+    }
 }
 
 function mostraDomanda() {
@@ -122,7 +185,12 @@ function mostraDomanda() {
         if (erroriRound.length > 0) {
             mazzoAttuale = [...erroriRound]; erroriRound = [];
             shuffle(mazzoAttuale); indiceCorrente = 0; round++;
-            alert(`Round ${round}: Recupero Errori.`);
+            alert(`Round ${round}: Recupero Errori del blocco.`);
+        } else if (sessionType === 'learn' && indiceBloccoCorrente + 1 < blocchiStudio.length) {
+            indiceBloccoCorrente++;
+            alert(`Blocco ${indiceBloccoCorrente} completato! Passiamo allo studio del Blocco ${indiceBloccoCorrente + 1}.`);
+            avviaFaseStudio();
+            return;
         } else {
             document.getElementById('quiz').classList.add('hidden');
             document.getElementById('finale').classList.remove('hidden');
@@ -197,3 +265,25 @@ function scaricaErrori() {
 }
 
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } }
+
+/* Gestione Tema Chiaro/Scuro */
+function toggleTheme() {
+    const isLight = document.body.classList.toggle('light-theme');
+    const btn = document.getElementById('themeBtn');
+    if (isLight) {
+        btn.innerText = "🌙 Scuro";
+        localStorage.setItem('quizTheme', 'light');
+    } else {
+        btn.innerText = "☀️ Chiaro";
+        localStorage.setItem('quizTheme', 'dark');
+    }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('quizTheme');
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+        const btn = document.getElementById('themeBtn');
+        if (btn) btn.innerText = "🌙 Scuro";
+    }
+});
