@@ -28,7 +28,8 @@ body.light-theme .opzione-btn {
 }
 
 body.light-theme input[type="text"], 
-body.light-theme input[type="number"] {
+body.light-theme input[type="number"],
+body.light-theme select {
     background-color: #ffffff;
     color: #1f2937;
     border: 1px solid #d1d5db;
@@ -94,7 +95,7 @@ h1 { font-size: 1.8rem; text-align: center; }
 
 .hidden { display: none !important; }
 
-button {
+button, .btn-custom-file {
     cursor: pointer;
     border: none;
     border-radius: 8px;
@@ -105,9 +106,11 @@ button {
     width: 100%;
     color: #fff;
     background-color: var(--accent-blue);
+    display: inline-block;
+    text-align: center;
 }
 
-button:hover { background-color: var(--accent-blue-hover); }
+button:hover, .btn-custom-file:hover { background-color: var(--accent-blue-hover); }
 
 /* Selettori Modalità Apprendimento / Test */
 .btn-type {
@@ -141,7 +144,7 @@ button.secondary {
 }
 button.secondary:hover { background-color: rgba(255, 255, 255, 0.1); }
 
-input[type="text"], input[type="number"] {
+input[type="text"], input[type="number"], select {
     padding: 8px 12px;
     border-radius: 8px;
     border: 1px solid rgba(255,255,255,0.1);
