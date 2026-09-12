@@ -1,257 +1,299 @@
-:root {
-    --bg-main: #121214;         /* Sfondo principale scuro */
-    --bg-card: #1e1e24;         /* Sfondo delle schede */
-    --bg-input: #2a2a32;        /* Sfondo di pulsanti e campi di testo */
-    --text-main: #f5f5f7;       /* Testo principale chiaro */
-    --text-muted: #a0a0aa;      /* Testo secondario sfumato */
-    --accent-blue: #3b82f6;     /* Blu di accento */
-    --accent-blue-hover: #2563eb;
-    --accent-orange: #f97316;   /* Arancione pulsanti selezione */
-    --accent-orange-hover: #ea580c;
-    --accent-green: #10b981;    /* Verde risposta corretta */
-    --accent-red: #ef4444;      /* Rosso errore */
+let tutteLeDomande = [], mazzoAttuale = [], erroriGlobali = [], erroriRound = [], indiceCorrente = 0, round = 1;
+let modalitaScelta = 'all';
+let sessionType = 'test'; 
+let ultimaDisposizione = "";
+
+// Variabili per Modalità Apprendimento
+let blocchiStudio = [];
+let indiceBloccoCorrente = 0;
+let indiceStudioInBlocco = 0;
+let dimensioneBlocco = 5; 
+
+document.getElementById('fileInput').onchange = function(e) {
+    const reader = new FileReader();
+    reader.onload = function() {
+        const testo = reader.result;
+        const blocchi = testo.split(/\n(?=\d+\.)/); 
+        tutteLeDomande = [];
+
+        blocchi.forEach(blocco => {
+            const idMatch = blocco.match(/^(\d+)\./);
+            const rispostaMatch = blocco.match(/Risposta(?:\s+corretta)?:\s*([a-eA-E])/i);
+            
+            if (idMatch && rispostaMatch) {
+                const id = idMatch[1];
+                const letteraCorretta = rispostaMatch[1].toUpperCase();
+                const lines = blocco.split('\n');
+                
+                let testoDomanda = "";
+                let opzioni = [];
+                let testoRispostaCorretta = "";
+
+                lines.forEach(line => {
+                    // REGOLA FLESSIBILE: accetta sia parentesi tonda che punto
+                    const opzMatch = line.match(/^([A-E])[\)\.]\s*(.*)/i);
+                    if (opzMatch) {
+                        const lettr = opzMatch[1].toUpperCase();
+                        const testoOpz = opzMatch[2].trim();
+                        opzioni.push(testoOpz);
+                        if (lettr === letteraCorretta) testoRispostaCorretta = testoOpz;
+                    } else if (!line.match(/^\d+\./) && !line.match(/Risposta/i) && line.trim() !== "") {
+                        if (opzioni.length === 0) testoDomanda += line.trim() + " ";
+                    } else if (line.match(/^\d+\./)) {
+                        testoDomanda = line.replace(/^\d+\.\s*/, '').trim() + " ";
+                    }
+                });
+
+                if (opzioni.length > 0) {
+                    tutteLeDomande.push({
+                        id: id,
+                        domanda: testoDomanda.trim(),
+                        opzioniOriginali: [...opzioni],
+                        corretta: testoRispostaCorretta
+                    });
+                }
+            }
+        });
+
+        if (tutteLeDomande.length > 0) {
+            document.getElementById('info-totale').innerText = `Caricate ${tutteLeDomande.length} domande.`;
+            document.getElementById('endRange').value = tutteLeDomande.length;
+            document.getElementById('options-menu').classList.remove('hidden');
+            generaChecklist();
+        } else {
+            alert("Formato non riconosciuto. Assicurati che le domande inizino con '1.' e le opzioni con 'a)'/'a.' o 'A)'/'A.'");
+        }
+    };
+    reader.readAsText(e.target.files[0]);
+};
+
+function setSessionType(type) {
+    sessionType = type;
+    document.getElementById('typeTest').classList.toggle('active-type', type === 'test');
+    document.getElementById('typeLearn').classList.toggle('active-type', type === 'learn');
+    
+    // Mostra il selettore del blocco solo in modalità Apprendimento
+    const blockContainer = document.getElementById('block-size-container');
+    if (type === 'learn') {
+        blockContainer.classList.remove('hidden');
+    } else {
+        blockContainer.classList.add('hidden');
+    }
 }
 
-/* Stili per la Light Mode */
-body.light-theme {
-    --bg-main: #f3f4f6;
-    --bg-card: #ffffff;
-    --bg-input: #e5e7eb;
-    --text-main: #1f2937;
-    --text-muted: #6b7280;
+function showMode(m) {
+    modalitaScelta = m;
+    document.getElementById('range-area').classList.toggle('hidden', m !== 'range');
+    document.getElementById('manual-area').classList.toggle('hidden', m !== 'manual');
 }
 
-body.light-theme .opzione-btn {
-    background-color: #f3f4f6;
-    color: #1f2937;
-    border: 1px solid #d1d5db;
+function generaChecklist() {
+    const container = document.getElementById('manual-selection');
+    container.innerHTML = '';
+    tutteLeDomande.forEach((q, index) => {
+        const label = document.createElement('label');
+        label.className = 'check-item';
+        label.setAttribute('data-text', q.id + " " + q.domanda.toLowerCase());
+        label.innerHTML = `<input type="checkbox" class="quiz-check" value="${index}" onchange="updateCounter()"> ${q.id}`;
+        container.appendChild(label);
+    });
 }
 
-body.light-theme input[type="text"], 
-body.light-theme input[type="number"],
-body.light-theme select {
-    background-color: #ffffff;
-    color: #1f2937;
-    border: 1px solid #d1d5db;
+function filterManual() {
+    const val = document.getElementById('searchManual').value.toLowerCase();
+    document.querySelectorAll('.check-item').forEach(item => {
+        item.style.display = item.getAttribute('data-text').includes(val) ? 'flex' : 'none';
+    });
 }
 
-body.light-theme .correct-answer-box p {
-    color: #1f2937 !important;
+function toggleFiltrati(select) {
+    document.querySelectorAll('.check-item').forEach(item => {
+        if (item.style.display !== 'none') item.querySelector('input').checked = select;
+    });
+    updateCounter();
 }
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+function updateCounter() {
+    document.getElementById('counter-manual').innerText = `Selezionate: ${document.querySelectorAll('.quiz-check:checked').length}`;
 }
 
-body {
-    background-color: var(--bg-main);
-    color: var(--text-main);
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    min-height: 100vh;
-    padding: 15px;
+function preparaQuiz() {
+    let mazzoIniziale = [];
+    if (modalitaScelta === 'all') mazzoIniziale = [...tutteLeDomande];
+    else if (modalitaScelta === 'range') {
+        const s = parseInt(document.getElementById('startRange').value) - 1;
+        const e = parseInt(document.getElementById('endRange').value);
+        mazzoIniziale = tutteLeDomande.slice(Math.max(0, s), e);
+    } else {
+        mazzoIniziale = Array.from(document.querySelectorAll('.quiz-check:checked')).map(cb => tutteLeDomande[cb.value]);
+    }
+    
+    if (mazzoIniziale.length === 0) return alert("Seleziona almeno una domanda!");
+    
+    indiceCorrente = 0; round = 1; erroriGlobali = []; erroriRound = [];
+    document.getElementById('setup').classList.add('hidden');
+
+    if (sessionType === 'learn') {
+        dimensioneBlocco = parseInt(document.getElementById('blockSizeSelect').value);
+        blocchiStudio = [];
+        for (let i = 0; i < mazzoIniziale.length; i += dimensioneBlocco) {
+            blocchiStudio.push(mazzoIniziale.slice(i, i + dimensioneBlocco));
+        }
+        indiceBloccoCorrente = 0;
+        avviaFaseStudio();
+    } else {
+        mazzoAttuale = [...mazzoIniziale];
+        shuffle(mazzoAttuale);
+        document.getElementById('quiz').classList.remove('hidden');
+        mostraDomanda();
+    }
 }
 
-.container {
-    width: 100%;
-    max-width: 600px;
-    margin-top: 10px;
+/* Gestione Modalità Apprendimento */
+function avviaFaseStudio() {
+    document.getElementById('quiz').classList.add('hidden');
+    document.getElementById('study-view').classList.remove('hidden');
+    indiceStudioInBlocco = 0;
+    mostraSchedaStudio();
 }
 
-.card {
-    background-color: var(--bg-card);
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+function mostraSchedaStudio() {
+    const bloccoAttuale = blocchiStudio[indiceBloccoCorrente];
+    const q = bloccoAttuale[indiceStudioInBlocco];
+
+    document.getElementById('studyBlockNum').innerText = `${indiceBloccoCorrente + 1}/${blocchiStudio.length}`;
+    document.getElementById('studyCardNum').innerText = indiceStudioInBlocco + 1;
+    document.getElementById('studyTotalBlock').innerText = bloccoAttuale.length;
+    document.getElementById('studyIdDomanda').innerText = `DOMANDA N. ${q.id}`;
+    document.getElementById('studyTestoDomanda').innerText = q.domanda;
+    document.getElementById('studyTestoRisposta').innerText = q.corretta;
 }
 
-.theme-toggle-container {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 10px;
+function prossimaSchedaStudio() {
+    const bloccoAttuale = blocchiStudio[indiceBloccoCorrente];
+    indiceStudioInBlocco++;
+
+    if (indiceStudioInBlocco < bloccoAttuale.length) {
+        mostraSchedaStudio();
+    } else {
+        document.getElementById('study-view').classList.add('hidden');
+        document.getElementById('quiz').classList.remove('hidden');
+        mazzoAttuale = [...bloccoAttuale];
+        shuffle(mazzoAttuale);
+        indiceCorrente = 0;
+        mostraDomanda();
+    }
 }
 
-.btn-theme-toggle {
-    width: auto;
-    padding: 6px 12px;
-    font-size: 0.85rem;
-    background-color: var(--bg-input);
-    color: var(--text-main);
-    border: 1px solid rgba(255,255,255,0.1);
+function mostraDomanda() {
+    document.getElementById('feedback').classList.add('hidden');
+    document.getElementById('btnProssima').classList.add('hidden');
+    const container = document.getElementById('opzioni-container');
+    container.innerHTML = '';
+
+    if (indiceCorrente >= mazzoAttuale.length) {
+        if (erroriRound.length > 0) {
+            mazzoAttuale = [...erroriRound]; erroriRound = [];
+            shuffle(mazzoAttuale); indiceCorrente = 0; round++;
+            alert(`Round ${round}: Recupero Errori del blocco.`);
+        } else if (sessionType === 'learn' && indiceBloccoCorrente + 1 < blocchiStudio.length) {
+            indiceBloccoCorrente++;
+            alert(`Blocco ${indiceBloccoCorrente} completato! Passiamo allo studio del Blocco ${indiceBloccoCorrente + 1}.`);
+            avviaFaseStudio();
+            return;
+        } else {
+            document.getElementById('quiz').classList.add('hidden');
+            document.getElementById('finale').classList.remove('hidden');
+            document.getElementById('btnDownload').style.display = erroriGlobali.length > 0 ? 'inline-block' : 'none';
+            return;
+        }
+    }
+
+    const q = mazzoAttuale[indiceCorrente];
+    document.getElementById('roundNum').innerText = round;
+    document.getElementById('remainNum').innerText = mazzoAttuale.length - indiceCorrente;
+    document.getElementById('errorNum').innerText = erroriRound.length;
+    document.getElementById('idDomanda').innerText = `DOMANDA N. ${q.id}`;
+    document.getElementById('testoDomanda').innerText = q.domanda;
+
+    let opzioniDaMostrare = [...q.opzioniOriginali];
+    if (opzioniDaMostrare.length > 1) {
+        let tentativi = 0, disposizioneAttuale = "";
+        do { shuffle(opzioniDaMostrare); disposizioneAttuale = opzioniDaMostrare.join('|'); tentativi++; } 
+        while (disposizioneAttuale === ultimaDisposizione && tentativi < 10);
+        ultimaDisposizione = disposizioneAttuale;
+    }
+
+    opzioniDaMostrare.forEach(testo => {
+        const btn = document.createElement('button');
+        btn.className = 'opzione-btn';
+        btn.innerText = testo;
+        btn.onclick = () => controllaRisposta(btn, testo, q.corretta);
+        container.appendChild(btn);
+    });
 }
 
-h1, h2, h3 {
-    margin-bottom: 8px;
-    font-weight: 700;
+function controllaRisposta(btnSelezionato, testoScelto, testoCorretto) {
+    if (!document.getElementById('btnProssima').classList.contains('hidden')) return;
+    const f = document.getElementById('feedback');
+    const buttons = document.querySelectorAll('.opzione-btn');
+    
+    buttons.forEach(b => b.disabled = true);
+    f.classList.remove('hidden');
+
+    if (testoScelto === testoCorretto) {
+        f.innerText = "✅ CORRETTO!";
+        f.className = "feedback success";
+        btnSelezionato.classList.add('corretta-evidenziata');
+    } else {
+        f.innerText = "❌ SBAGLIATO!";
+        f.className = "feedback error";
+        btnSelezionato.classList.add('errata-evidenziata');
+        buttons.forEach(b => { if(b.innerText === testoCorretto) b.classList.add('corretta-evidenziata'); });
+        const q = mazzoAttuale[indiceCorrente];
+        erroriRound.push(q);
+        if (!erroriGlobali.find(e => e.id === q.id)) erroriGlobali.push(q);
+    }
+    document.getElementById('btnProssima').classList.remove('hidden');
 }
 
-h1 { font-size: 1.8rem; text-align: center; }
-.subtitle { color: var(--text-muted); text-align: center; margin-bottom: 20px; font-size: 0.95rem; }
+function prossimaDomanda() { indiceCorrente++; mostraDomanda(); }
 
-.hidden { display: none !important; }
-
-button, .btn-custom-file {
-    cursor: pointer;
-    border: none;
-    border-radius: 8px;
-    padding: 12px 16px;
-    font-size: 1rem;
-    font-weight: 600;
-    transition: all 0.2s ease;
-    width: 100%;
-    color: #fff;
-    background-color: var(--accent-blue);
-    display: inline-block;
-    text-align: center;
+function scaricaErrori() {
+    let out = "PANIERE ERRORI (FORMATO ORIGINALE)\n\n";
+    erroriGlobali.forEach(q => {
+        out += `${q.id}. ${q.domanda}\n`;
+        q.opzioniOriginali.forEach((opt, i) => { out += `${String.fromCharCode(65 + i)}) ${opt}\n`; });
+        const letteraOrig = String.fromCharCode(65 + q.opzioniOriginali.indexOf(q.corretta));
+        out += `Risposta: ${letteraOrig}\n\n`;
+    });
+    const blob = new Blob([out], {type: 'text/plain'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'errori_quiz.txt';
+    a.click();
 }
 
-button:hover, .btn-custom-file:hover { background-color: var(--accent-blue-hover); }
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } }
 
-/* Selettori Modalità Apprendimento / Test */
-.btn-type {
-    background-color: var(--bg-input);
-    color: var(--text-muted);
-    border: 1px solid rgba(255,255,255,0.05);
-    flex: 1;
+/* Gestione Tema Chiaro/Scuro */
+function toggleTheme() {
+    const isLight = document.body.classList.toggle('light-theme');
+    const btn = document.getElementById('themeBtn');
+    if (isLight) {
+        btn.innerText = "🌙 Scuro";
+        localStorage.setItem('quizTheme', 'light');
+    } else {
+        btn.innerText = "☀️ Chiaro";
+        localStorage.setItem('quizTheme', 'dark');
+    }
 }
 
-.btn-type.active-type {
-    background-color: var(--accent-blue);
-    color: #fff;
-}
-
-.mode-options {
-    display: flex;
-    gap: 8px;
-    margin: 15px 0;
-}
-
-.btn-mode {
-    background-color: var(--accent-orange);
-    color: #fff;
-    flex: 1;
-}
-.btn-mode:hover { background-color: var(--accent-orange-hover); }
-
-button.secondary {
-    background-color: var(--bg-input);
-    color: var(--text-main);
-}
-button.secondary:hover { background-color: rgba(255, 255, 255, 0.1); }
-
-input[type="text"], input[type="number"], select {
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.1);
-    background-color: var(--bg-main);
-    color: var(--text-main);
-    font-size: 0.95rem;
-}
-
-.range-box {
-    background-color: var(--bg-input);
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 15px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.95rem;
-    color: var(--text-main);
-}
-.range-box input { width: 70px; text-align: center; }
-
-.manual-box {
-    background-color: var(--bg-input);
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 15px;
-}
-
-#searchManual {
-    width: 100%;
-    margin-bottom: 10px;
-}
-
-#manual-selection {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(55px, 1fr));
-    gap: 6px;
-    max-height: 220px;
-    overflow-y: auto;
-    padding: 8px;
-    background: var(--bg-main);
-    border-radius: 8px;
-    margin-bottom: 10px;
-}
-
-.check-item {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 6px 4px;
-    background: var(--bg-input);
-    border-radius: 6px;
-    font-size: 0.85rem;
-    color: var(--text-main);
-    cursor: pointer;
-    border: 1px solid rgba(255,255,255,0.05);
-}
-
-.check-item input { cursor: pointer; }
-
-.stats-bar {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 15px;
-    font-size: 0.9rem;
-    color: var(--text-muted);
-}
-
-#testoDomanda {
-    font-weight: 700;
-    font-size: 1.15em;
-    margin-bottom: 25px;
-    line-height: 1.5;
-    color: var(--text-main);
-}
-
-.opzione-btn {
-    background-color: var(--bg-input);
-    color: var(--text-main);
-    text-align: left;
-    margin-bottom: 12px;
-    font-weight: 500;
-    line-height: 1.4;
-    border: 1px solid rgba(255,255,255,0.05);
-}
-
-.opzione-btn:disabled { cursor: not-allowed; opacity: 0.8; }
-.corretta-evidenziata { background-color: var(--accent-green) !important; color: #fff !important; }
-.errata-evidenziata { background-color: var(--accent-red) !important; color: #fff !important; }
-
-/* Box Flashcard per Modalità Apprendimento */
-.correct-answer-box {
-    background-color: rgba(16, 185, 129, 0.15);
-    border-left: 4px solid var(--accent-green);
-    padding: 15px;
-    border-radius: 8px;
-}
-
-.feedback {
-    margin-top: 20px;
-    padding: 15px;
-    border-radius: 10px;
-    text-align: center;
-    font-weight: bold;
-    font-size: 1.1rem;
-}
-
-.feedback.success { background-color: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
-.feedback.error { background-color: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+window.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('quizTheme');
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+        const btn = document.getElementById('themeBtn');
+        if (btn) btn.innerText = "🌙 Scuro";
+    }
+});
