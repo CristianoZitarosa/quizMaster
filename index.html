@@ -22,18 +22,30 @@
         </div>
 
         <div id="setup">
-            <h1 style="color: var(--accent-blue);">Quiz Master V9.0</h1>
+            <h1 style="color: var(--accent-blue);">Quiz Master V9.1</h1>
             <p class="subtitle">Seleziona la banca dati per iniziare</p>
             
-            <input type="file" id="fileInput" accept=".txt" style="margin-bottom: 15px; width: 100%;">
+            <label class="btn-custom-file">
+                📁 Carica file .txt
+                <input type="file" id="fileInput" accept=".txt" class="hidden">
+            </label>
             
             <div id="options-menu" class="hidden">
                 <p id="info-totale" style="margin: 15px 0; font-weight: bold; text-align: center; color: var(--accent-blue);"></p>
                 
-                <!-- Selezione Tipo Sessione -->
                 <div style="display: flex; gap: 8px; margin-bottom: 10px;">
                     <button id="typeTest" class="btn-type active-type" onclick="setSessionType('test')">📝 Test Classico</button>
                     <button id="typeLearn" class="btn-type" onclick="setSessionType('learn')">🧠 Apprendimento</button>
+                </div>
+
+                <div id="block-size-container" class="hidden" style="margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; background-color: var(--bg-input); padding: 10px 15px; border-radius: 8px;">
+                    <span style="font-size: 0.9rem; font-weight: 600;">Dimensione Blocco:</span>
+                    <select id="blockSizeSelect">
+                        <option value="5" selected>5 Domande</option>
+                        <option value="10">10 Domande</option>
+                        <option value="15">15 Domande</option>
+                        <option value="20">20 Domande</option>
+                    </select>
                 </div>
 
                 <div class="mode-options">
