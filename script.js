@@ -3,11 +3,13 @@ let modalitaScelta = 'all';
 let sessionType = 'test'; 
 let ultimaDisposizione = "";
 
-// Variabili per Modalità Apprendimento
+// Variabili per Modalità Apprendimento Progressivo
 let blocchiStudio = [];
 let indiceBloccoCorrente = 0;
 let indiceStudioInBlocco = 0;
 let dimensioneBlocco = 5; 
+let stepCorrenteAprendimento = 0; 
+let maxStepBlocco = 1;
 
 document.getElementById('fileInput').onchange = function(e) {
     const reader = new FileReader();
@@ -30,7 +32,6 @@ document.getElementById('fileInput').onchange = function(e) {
                 let testoRispostaCorretta = "";
 
                 lines.forEach(line => {
-                    // REGOLA FLESSIBILE: accetta sia parentesi tonda che punto
                     const opzMatch = line.match(/^([A-E])[\)\.]\s*(.*)/i);
                     if (opzMatch) {
                         const lettr = opzMatch[1].toUpperCase();
@@ -45,11 +46,15 @@ document.getElementById('fileInput').onchange = function(e) {
                 });
 
                 if (opzioni.length > 0) {
+                    const distrazioni = opzioni.filter(o => o !== testoRispostaCorretta);
+                    shuffle(distrazioni);
+
                     tutteLeDomande.push({
                         id: id,
                         domanda: testoDomanda.trim(),
                         opzioniOriginali: [...opzioni],
-                        corretta: testoRispostaCorretta
+                        corretta: testoRispostaCorretta,
+                        distrazioniOrdina: distrazioni
                     });
                 }
             }
@@ -72,7 +77,6 @@ function setSessionType(type) {
     document.getElementById('typeTest').classList.toggle('active-type', type === 'test');
     document.getElementById('typeLearn').classList.toggle('active-type', type === 'learn');
     
-    // Mostra il selettore del blocco solo in modalità Apprendimento
     const blockContainer = document.getElementById('block-size-container');
     if (type === 'learn') {
         blockContainer.classList.remove('hidden');
@@ -149,11 +153,16 @@ function preparaQuiz() {
     }
 }
 
-/* Gestione Modalità Apprendimento */
+/* Gestione Modalità Apprendimento Progressivo */
 function avviaFaseStudio() {
     document.getElementById('quiz').classList.add('hidden');
     document.getElementById('study-view').classList.remove('hidden');
     indiceStudioInBlocco = 0;
+    stepCorrenteAprendimento = 0;
+    
+    const blocco = blocchiStudio[indiceBloccoCorrente];
+    maxStepBlocco = Math.max(...blocco.map(q => q.opzioniOriginali.length)) - 1;
+
     mostraSchedaStudio();
 }
 
@@ -178,11 +187,17 @@ function prossimaSchedaStudio() {
     } else {
         document.getElementById('study-view').classList.add('hidden');
         document.getElementById('quiz').classList.remove('hidden');
-        mazzoAttuale = [...bloccoAttuale];
-        shuffle(mazzoAttuale);
-        indiceCorrente = 0;
-        mostraDomanda();
+        
+        stepCorrenteAprendimento = 1;
+        avviaStepApprendimento();
     }
+}
+
+function avviaStepApprendimento() {
+    mazzoAttuale = [...blocchiStudio[indiceBloccoCorrente]];
+    shuffle(mazzoAttuale);
+    indiceCorrente = 0;
+    mostraDomanda();
 }
 
 function mostraDomanda() {
@@ -195,12 +210,24 @@ function mostraDomanda() {
         if (erroriRound.length > 0) {
             mazzoAttuale = [...erroriRound]; erroriRound = [];
             shuffle(mazzoAttuale); indiceCorrente = 0; round++;
-            alert(`Round ${round}: Recupero Errori del blocco.`);
-        } else if (sessionType === 'learn' && indiceBloccoCorrente + 1 < blocchiStudio.length) {
-            indiceBloccoCorrente++;
-            alert(`Blocco ${indiceBloccoCorrente} completato! Passiamo allo studio del Blocco ${indiceBloccoCorrente + 1}.`);
-            avviaFaseStudio();
-            return;
+            alert(`Round ${round}: Recupero Errori.`);
+        } else if (sessionType === 'learn') {
+            if (stepCorrenteAprendimento < maxStepBlocco) {
+                stepCorrenteAprendimento++;
+                alert(`Perfetto! Passiamo allo Step ${stepCorrenteAprendimento + 1} (${stepCorrenteAprendimento + 1} opzioni).`);
+                avviaStepApprendimento();
+                return;
+            } else if (indiceBloccoCorrente + 1 < blocchiStudio.length) {
+                indiceBloccoCorrente++;
+                alert(`Blocco ${indiceBloccoCorrente} completato! Passiamo allo studio del Blocco ${indiceBloccoCorrente + 1}.`);
+                avviaFaseStudio();
+                return;
+            } else {
+                document.getElementById('quiz').classList.add('hidden');
+                document.getElementById('finale').classList.remove('hidden');
+                document.getElementById('btnDownload').style.display = erroriGlobali.length > 0 ? 'inline-block' : 'none';
+                return;
+            }
         } else {
             document.getElementById('quiz').classList.add('hidden');
             document.getElementById('finale').classList.remove('hidden');
@@ -210,13 +237,28 @@ function mostraDomanda() {
     }
 
     const q = mazzoAttuale[indiceCorrente];
-    document.getElementById('roundNum').innerText = round;
+    
+    if (sessionType === 'learn') {
+        document.getElementById('labelRound').innerText = `Step: ${stepCorrenteAprendimento + 1}/${maxStepBlocco + 1}`;
+    } else {
+        document.getElementById('labelRound').innerText = `Round: ${round}`;
+    }
+    
     document.getElementById('remainNum').innerText = mazzoAttuale.length - indiceCorrente;
     document.getElementById('errorNum').innerText = erroriRound.length;
     document.getElementById('idDomanda').innerText = `DOMANDA N. ${q.id}`;
     document.getElementById('testoDomanda').innerText = q.domanda;
 
-    let opzioniDaMostrare = [...q.opzioniOriginali];
+    let opzioniDaMostrare = [];
+
+    if (sessionType === 'learn') {
+        const numDistrazioni = Math.min(stepCorrenteAprendimento, q.distrazioniOrdina.length);
+        const distrazioniStep = q.distrazioniOrdina.slice(0, numDistrazioni);
+        opzioniDaMostrare = [q.corretta, ...distrazioniStep];
+    } else {
+        opzioniDaMostrare = [...q.opzioniOriginali];
+    }
+
     if (opzioniDaMostrare.length > 1) {
         let tentativi = 0, disposizioneAttuale = "";
         do { shuffle(opzioniDaMostrare); disposizioneAttuale = opzioniDaMostrare.join('|'); tentativi++; } 
